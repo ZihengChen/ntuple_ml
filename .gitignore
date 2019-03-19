@@ -3,7 +3,7 @@ data/root
 data/pickle
 
 *.DS_Store
-notebooks/.ipynb_checkpoints
+#notebooks/.ipynb_checkpoints
 python/__pycache__
 .vscode
 
