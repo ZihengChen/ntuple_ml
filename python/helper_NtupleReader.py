@@ -4,12 +4,12 @@ import pandas as pd
 from tqdm import trange
 
 class NtupleReader():
-    def __init__(self, inputFileName, n=-1, tqdmLabel=None):
+    def __init__(self, inputFileName, n=-1, tqdmLabel=None, layerPool=False):
         
         self.inputFileName = inputFileName
 
         self.n = n
-
+        self.layerPool = layerPool
         if tqdmLabel is None:
             self.tqdmLabel = 'Making Dataset'
         else:
@@ -49,12 +49,22 @@ class NtupleReader():
                 slt = event.cluster2d_layer==l 
                 slt &= event.cluster2d_eta>0
                 slt &= event.cluster2d_energy>0
-
-                layer_feature = [event['cluster2d_{}'.format(var)][slt] for var in ['eta','phi','energy']]
-                layer_feature = np.array(layer_feature).T
-                layer_feature = layer_feature[layer_feature[:,2].argsort()]
-                feature.append(layer_feature)
-
+                if self.layerPool:
+                    layer_feature = event['cluster2d_energy'][slt].sum()
+                    feature.append(layer_feature)
+                else:
+                    layer_feature = [event['cluster2d_{}'.format(var)][slt] \
+                                     for var in ['eta','phi','energy']]
+                    layer_feature = np.array(layer_feature).T
+                    layer_feature = layer_feature[layer_feature[:,2].argsort()]
+                    feature.append(layer_feature)
+                    
+            if self.layerPool:
+                feature = np.array(feature)
+                normalizeFactor = feature.sum()
+                if normalizeFactor > 0:
+                    feature /= normalizeFactor
+                
             # get label
             ## select good genpart
             gen_pid = np.abs(event.gen_pdgid)[0]

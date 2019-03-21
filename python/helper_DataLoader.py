@@ -29,4 +29,3 @@ class TICLNetDataset():
         #     batches.append(batch)
         # return batches
         
-        
