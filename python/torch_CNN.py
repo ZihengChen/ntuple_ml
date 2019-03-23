@@ -2,9 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class TICLNet_layerPool(nn.Module):
+
+class CNN(nn.Module):
     def __init__(self):
-        super(TICLNet_layerPool, self).__init__()
+        super(CNN, self).__init__()
         
         self.conv = nn.Sequential(
             nn.Conv1d( 1, 4, 5, stride=1, padding=0),# b, 4, 48

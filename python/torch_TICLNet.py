@@ -88,3 +88,5 @@ class ClassifyNet(nn.Module):
         x = x.view(-1,32*20)
         x = self.fc(x)
         return x
+
+

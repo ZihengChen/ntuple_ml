@@ -1,8 +1,6 @@
 import pandas as pd
-from pylab import *
 
-
-class TICLNetDataset():
+class DatasetLoader():
     def __init__(self, fileName):
         dataset = pd.read_pickle(fileName)
         self.label = list(dataset.label)
@@ -24,8 +22,4 @@ class TICLNetDataset():
             
             batch = {'feature': self.feature[istart:iend],
                      'label': self.label[istart:iend]}
-            
             yield batch
-        #     batches.append(batch)
-        # return batches
-        

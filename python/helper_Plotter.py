@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+import pandas as pd
 from pylab import *
 
 def plotEvent_EtaPhi(events,ievt):
@@ -46,3 +48,13 @@ def plotEvent_EtaPhi(events,ievt):
     axes[1].set_xlabel('layer',fontsize=12)
     axes[1].set_xlim(-4,57)
     axes[0].set_title('Label={}, Energy={:3.0f} GeV'.format(label,evt.gen_energy))
+
+
+if __name__ == '__main__':
+    dirctory = "/Users/zihengchen/Documents/HGCal/TICL"
+
+    events = pd.read_pickle( dirctory + '/data/pickle/dataset_LAYERS_test.pkl')
+    for i in range(100):
+        plotEvent_EtaPhi(events,i)
+        plt.savefig( dirctory + '/plots/events/test_event_{}.png'.format(i),dpi=200)
+        plt.close()
