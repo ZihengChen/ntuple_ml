@@ -1,7 +1,5 @@
-plots/events
-plots/*/summary
-data/root
-data/pickle
+plots
+data
 
 *.DS_Store
 notebooks/.ipynb_checkpoints

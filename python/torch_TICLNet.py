@@ -11,7 +11,7 @@ class TICLNet(nn.Module):
     def forward(self, batchEvents):
         batchSummary = self.summarizeBatchEvents(batchEvents)
         output = self.cnn(batchSummary)
-        return output # (batch_size, nClasses=3)
+        return output # (batch_size, nClasses=4)
         
     def summarizeBatchEvents(self, batchEvents):
         batchSummary = []
@@ -19,7 +19,7 @@ class TICLNet(nn.Module):
             eventSummary = self.sumarizeEvent(event)
             batchSummary.append(eventSummary)
         batchSummary = torch.cat(batchSummary)
-        return batchSummary # (batch_size, nChannel=16, Length=52)
+        return batchSummary # (batch_size * nChannel=16, Length=50)
     
     def sumarizeEvent(self, event):
         eventSummary = []
@@ -27,7 +27,7 @@ class TICLNet(nn.Module):
             layerSummary = self.summarizeLayer(layer)
             eventSummary.append(layerSummary)
         eventSummary = torch.cat(eventSummary).transpose(1,0)
-        return eventSummary # (nChannel=16, Length=52)
+        return eventSummary # (nChannel=16, Length=50)
     
     def summarizeLayer(self, layer):
         if layer.shape[0] > 0:
@@ -67,26 +67,25 @@ class ClassifyNet(nn.Module):
         super(ClassifyNet, self).__init__()
         
         self.conv = nn.Sequential(
-            nn.Conv1d(16, 32, 5, stride=1, padding=0), # b, 32, 48
+            nn.Conv1d(16, 32, 5, stride=1, padding=0), # b, 32, 46
             nn.ReLU(True),
-            nn.Conv1d(32, 32, 4, stride=2, padding=0), # b, 32, 23
+            nn.Conv1d(32, 32, 4, stride=2, padding=0), # b, 32, 21
             nn.ReLU(True),
-            nn.Conv1d(32, 32, 4, stride=1, padding=0), # b, 32, 20
+            nn.Conv1d(32, 32, 4, stride=1, padding=0), # b, 32, 19
             nn.ReLU(True)
         )
         
         self.fc = nn.Sequential(
-            nn.Linear(32*20,16),
+            nn.Linear(32*19,16),
             nn.ReLU(True),
             nn.Linear(16,4),
             # nn.LogSoftmax(dim=1) this is combined in loss
         )
 
     def forward(self, x):
-        x = x.view(-1,16,52)
+        x = x.view(-1,16,50)
         x = self.conv(x)
-        x = x.view(-1,32*20)
+        x = x.view(-1,32*19)
         x = self.fc(x)
         return x
-
 
