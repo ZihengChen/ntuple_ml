@@ -47,16 +47,15 @@ class TracksterDisplay():
       'cluster2d_z',
       'cluster2d_best_cpPdg',
       'gunparticle_eta', 'gunparticle_phi', 'gunparticle_id','gunparticle_energy',
-      'trackster_clusters'
+      'trackster_clusters','tracksterMIP_clusters'
       ]
       
       
       
     self.df = read_root(self.inputFileName, 'ana/hgc',columns=self.variableName)
 
-    self.pidToLabelMap = {11:0, -11:0, 22:1, 13:2, -13:2, 211:3, 311:4, -311:4, -1:-1}
-    self.cmapdict = {-1:"black", 0:"blue",1:"red",2:"green",3:"purple",4:"orange",5:"black"}
-
+    self.pidToLabelMap = {11:0, -11:0, 22:1, 13:2, -13:2, 211:3, -211:3, 311:4, -311:4, -1:-1, 5:5}
+    self.cmapdict = {-1:"black", 0:"blue",1:"red",2:"green",3:"purple",4:"orange",5:"cyan"}
 
 
   def figureHGCalGeometry(self):
@@ -88,28 +87,34 @@ class TracksterDisplay():
         y[2*i]= 320*np.tan(theta)*np.sin(phi)
         z[2*i]= 320
 
-      genLines = go.Scatter3d(x=x, y=z, z=y, name="event{} GenParticle".format(idx), mode='lines', marker=dict(size=0,opacity=1,line=dict(width=1,color='black'))) 
+      genLines = go.Scatter3d(x=x, y=z, z=y, name="event{} GenParticle".format(idx), mode='lines', 
+                                marker=dict(size=0,opacity=1,line=dict(width=1,color='black'))) 
       genLinesList.append(genLines)
     return genLinesList
     
   def figureClusters(self,eventIds):
-      
+
       clustersList = []
       for idx in eventIds:
         event = self.df.loc[idx]
-        
-        e = event.cluster2d_energy
-        x = event.cluster2d_x
-        y = event.cluster2d_y
-        z = event.cluster2d_z
+
+        cluster2d_isInTrackster = np.zeros(event.cluster2d_energy.size)
+        for i in range(event.trackster_clusters.size):
+            tr = event.trackster_clusters[i]
+            cluster2d_isInTrackster[tr] = 1
+        for i in range(event.tracksterMIP_clusters.size):
+            tr = event.tracksterMIP_clusters[i]
+            cluster2d_isInTrackster[tr] = 1
+
+        slt = cluster2d_isInTrackster==0
+
+        e = event.cluster2d_energy[slt]
+        x = event.cluster2d_x[slt]
+        y = event.cluster2d_y[slt]
+        z = event.cluster2d_z[slt]
           
-        for tr in event.trackster_clusters:
-          e = np.delete(e,tr)
-          x = np.delete(x,tr)
-          y = np.delete(y,tr)
-          z = np.delete(z,tr)
-          
-        clusters = go.Scatter3d(x=x, y=z, z=y, name="event{} NoiseClusters".format(idx), mode='markers', marker=dict(size=5*e**0.5,color='black',line=dict(width=0))) 
+        clusters = go.Scatter3d(x=x, y=z, z=y, name="event{} NoiseClusters".format(idx), mode='markers', 
+                                marker=dict(size=5*e**0.5,opacity=1.0,color='black',line=dict(width=0))) 
         clustersList.append(clusters)
       return clustersList
 
@@ -134,8 +139,25 @@ class TracksterDisplay():
           markerSize = 20
         else:
           markerSize = 5
-        trackster = go.Scatter3d(x=x, y=z, z=y, name="event{} Trackster{} pid{}".format(idx,j,pid), mode='markers', marker=dict(size=markerSize*e**0.5,color=self.cmapdict[label],line=dict(width=0))) 
+        trackster = go.Scatter3d( x=x, y=z, z=y, name="event{} Trackster{} pid={}".format(idx,j,pid), mode='markers', 
+                                  marker=dict(size=markerSize*e**0.5,opacity=0.5,color=self.cmapdict[label],line=dict(width=0))) 
         trackstersList.append(trackster)
+
+
+      for j,tr in enumerate(event.tracksterMIP_clusters):
+        # make trackster
+        e = event.cluster2d_energy[tr]
+        x = event.cluster2d_x[tr]
+        y = event.cluster2d_y[tr]
+        z = event.cluster2d_z[tr]
+
+        label = 5
+        markerSize = 5
+
+        trackster = go.Scatter3d( x=x, y=z, z=y, name="event{} Trackster{} pid={}".format(idx,j,"MIP"), mode='markers', 
+                                  marker=dict(size=markerSize*e**0.5,opacity=0.5,color=self.cmapdict[label],line=dict(width=0))) 
+        trackstersList.append(trackster)
+
     return trackstersList
 
   def plot(self,eventIds):
@@ -153,3 +175,44 @@ class TracksterDisplay():
                                       )
                     )
     plot(fig, filename='test')
+
+  def dumpEvent(self,eventIds):
+
+    for idx in eventIds:
+      outputfile = open("../data/csv/event{}.csv".format(idx),"w+")
+
+      event = self.df.loc[idx]
+      # dump gen particles
+      for i in range(event.gunparticle_id.size):
+        eta, phi = event.gunparticle_eta[i],event.gunparticle_phi[i]
+        theta = 2*np.arctan(np.exp(-eta))
+        x = float(320*np.tan(theta)*np.cos(phi))
+        y = float(320*np.tan(theta)*np.sin(phi))
+        label = self.pidToLabelMap[int(event.gunparticle_id[i])]
+        
+        outputfile.write("genpart,{},{},{}\n".format(x,y,label))
+
+      
+      # get cluster2d_trackster
+      cluster2d_trackster = -1 * np.ones(event.cluster2d_energy.size)
+      for i in range(event.trackster_clusters.size):
+          tr = event.trackster_clusters[i]
+          pid = tracksterLabel(tr, event.cluster2d_best_cpPdg)
+          label = self.pidToLabelMap[pid]
+          cluster2d_trackster[tr] = label
+      for i in range(event.tracksterMIP_clusters.size):
+          tr = event.tracksterMIP_clusters[i]
+          label = 5
+          cluster2d_trackster[tr] = label
+
+      event['cluster2d_trackster'] = np.int32(cluster2d_trackster)
+      # dump clusters
+      for i in range(event.cluster2d_energy.size):
+          x = event.cluster2d_x[i]
+          y = event.cluster2d_y[i]
+          z = event.cluster2d_z[i]
+          e = event.cluster2d_energy[i]
+          label = event.cluster2d_trackster[i]
+          outputfile.write("cluster,{},{},{},{},{}\n".format(x,y,z,e,label))
+
+      outputfile.close()
