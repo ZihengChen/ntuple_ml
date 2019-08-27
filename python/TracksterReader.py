@@ -11,7 +11,7 @@ def tracksterLabel(trcl, cpPdg):
     label,maxcount = -1, 0
     for idx in trcl:
         l = cpPdg[idx]
-        if l > -1:
+        if l != -1:
             if l in labelcount:
                 labelcount[l] += 1
             else:
@@ -68,10 +68,11 @@ class TracksterReader():
 
     def run(self):
         df = read_root(self.inputFileName, 'ana/hgc', columns=self.variableName )
+        self.df = df
         dataset = self.processTracksters(df)
         dataset = pd.DataFrame(dataset)
         
-        dataset['label'] = dataset['label'].map({11:0, -11:0, 22:1, 13:2, -13:2, 211:3, 311:4, -311:4, -1:5})
+        dataset['label'] = dataset['pid'].map({-11:0, 11:0, 22:1, 13:2, -13:2, -211:3, 211:3, 311:4, -1:5})
         return dataset
             
     def processTracksters(self, df):
@@ -87,7 +88,7 @@ class TracksterReader():
                 trackster = {}
                             
                 trackster["feature"] = tracksterImage(tr,layer,energy,eta,phi)
-                trackster["label"] = tracksterLabel(tr,cpPdg) 
+                trackster["pid"] = tracksterLabel(tr,cpPdg) 
                 yield trackster
 
 
